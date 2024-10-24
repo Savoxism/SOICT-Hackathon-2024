@@ -9,7 +9,6 @@ from selenium.common.exceptions import TimeoutException
 import time
 
 def scroll_to_element(driver, element):
-    """ Scroll to a specific element to make sure it's visible """
     driver.execute_script("arguments[0].scrollIntoView();", element)
     time.sleep(1)
 
@@ -29,8 +28,6 @@ def scrape_product_info_on_page(driver, product_url):
         EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/main/div[3]/section/div/div[2]/div/span[2]/div/span[2]"))
     )
     price = price_element.text
-
-    # List of potential button paths
     
     button_paths = [
         "/html/body/div[1]/div/main/div[3]/section/div/div[2]/div/span[4]/div[7]/ul/li[1]/div/h2/button",
@@ -38,7 +35,7 @@ def scrape_product_info_on_page(driver, product_url):
         "/html/body/div[1]/div/main/div[3]/section/div/div[2]/div/span[4]/div[8]/ul/li[1]/div/h2/button"
     ]
     
-    # Corresponding description paths for the buttons
+    # Corresponding paths
     ul_element_paths = [
         "/html/body/div[1]/div/main/div[3]/section/div/div[2]/div/span[4]/div[7]/ul/li[1]/div/div/div/div/ul",
         "/html/body/div[1]/div/main/div[3]/section/div/div[2]/div/span[4]/div[6]/ul/li[1]/div/div/div/div/ul",
@@ -51,7 +48,7 @@ def scrape_product_info_on_page(driver, product_url):
 
     for button_path, ul_element_path in zip(button_paths, ul_element_paths):
         try:
-            # Try clicking the button to expand the description
+            # Button that expands the product description
             button = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, button_path))
             )
@@ -72,21 +69,21 @@ def scrape_product_info_on_page(driver, product_url):
             image_urls = [img.get_attribute('src') for img in image_elements]
 
             button_clicked = True
-            break  # Stop after the first successful button click and description extraction
+            break  # Stop after the first successful button click 
 
         except TimeoutException:
             print(f"Button with path {button_path} not found. Trying next path.")
     
     if not button_clicked:
         print("Description or images not found for all button paths. Skipping this product.")
-        return product_name, price, None, None  # Return None for description and image_urls if none of the buttons work
+        return product_name, price, None, None  
 
     return product_name, price, description, image_urls
 
 
 def scrape_multiple_products(chromedriver_path, url, output_file='datasets/shirts/shirts3.json', num_products=72, category="shirts"):
     chrome_options = Options()
-    # chrome_options.add_argument("--headless")  # Enable headless mode if needed
+    # chrome_options.add_argument("--headless")  
     chrome_options.add_argument("--disable-gpu")  
     chrome_options.add_argument("--disable-webgl") 
     chrome_options.add_argument("--no-sandbox")  
@@ -102,12 +99,10 @@ def scrape_multiple_products(chromedriver_path, url, output_file='datasets/shirt
     driver.execute_script("window.scrollBy(0, 800);")  
     time.sleep(2)  
 
-    # Prepare to save scraped data
     all_products_info = []
 
     for i in range(1, num_products + 1):
         time.sleep(2)
-
         # Dynamic Link
         product_link_xpath = f"/html/body/div[1]/div/main/div/div/div[1]/div[2]/div/div[1]/section/article[{i}]/a"
 
@@ -115,19 +110,19 @@ def scrape_multiple_products(chromedriver_path, url, output_file='datasets/shirt
             product_link = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, product_link_xpath))
             )
-            scroll_to_element(driver, product_link)  # Scroll to the product link
+            scroll_to_element(driver, product_link)  
             product_url = product_link.get_attribute('href')
-            product_link.click()  # Click to navigate to the product page
+            product_link.click()  
             print(f"Navigated to product {i}: {product_url}")
         
             # Scrape product info on the product page
             product_name, price, description, image_urls = scrape_product_info_on_page(driver, product_url)
 
-            if description is None:  # If scraping fails, go back to the product listing page
+            if description is None: 
                 driver.back()
                 continue
 
-            # Append the product information to the list
+            # Append the product info
             product_info = {
                 "product_url": product_url,
                 "product_name": product_name,
@@ -145,7 +140,7 @@ def scrape_multiple_products(chromedriver_path, url, output_file='datasets/shirt
         
         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, product_link_xpath)))
 
-    # Save all product information to a JSON file
+    # Dump the data to a JSON file
     with open(output_file, 'w') as file:
         json.dump(all_products_info, file, indent=4)
 
