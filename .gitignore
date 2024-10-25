@@ -1,3 +1,7 @@
+#Project specific files
+sample_hf_trainer
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

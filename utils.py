@@ -12,7 +12,6 @@ def scroll_to_element(driver, element):
     driver.execute_script("arguments[0].scrollIntoView();", element)
     time.sleep(1)
     
-    
 def get_largest_image_from_srcset(srcset):
     if not srcset:
         return None
