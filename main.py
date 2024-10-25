@@ -76,7 +76,7 @@ def scrape_product_info_on_page(driver, product_url):
 
     return product_name, price, description, image_urls
 
-def scrape_multiple_products(chromedriver_path, url, output_file='datasets/shirts/shirts_1.json', num_products=72, category="shirts"):
+def scrape_multiple_products(chromedriver_path, base_url, output_folder='datasets/shirts', start_page=2, num_products_per_page=72, max_pages=5, category="shirts"):
     chrome_options = Options()
     # chrome_options.add_argument("--headless")  
     chrome_options.add_argument("--disable-gpu")  
@@ -89,64 +89,74 @@ def scrape_multiple_products(chromedriver_path, url, output_file='datasets/shirt
     service = Service(executable_path=chromedriver_path)
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    driver.get(url)
-
-    driver.execute_script("window.scrollBy(0, 800);")  
-    time.sleep(2)  
-
     all_products_info = []
+    current_page = start_page
 
-    for i in range(1, num_products + 1):
-        time.sleep(2)
-        # Dynamic Link
-        product_link_xpath = f"/html/body/div[1]/div/main/div/div/div[1]/div[2]/div/div[1]/section/article[{i}]/a"
+    while current_page <= max_pages:
+        url = f"{base_url}&page={current_page}"
+        output_file = f"{output_folder}/shirts_{current_page}.json"
+        print(f"Scraping page {current_page}: {url}")
 
-        try:
-            product_link = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, product_link_xpath))
-            )
-            scroll_to_element(driver, product_link)  
-            product_url = product_link.get_attribute('href')
-            product_link.click()  
-            print(f"Navigated to product {i}: {product_url}")
-        
-            # Scrape product info on the product page
-            product_name, price, description, image_urls = scrape_product_info_on_page(driver, product_url)
+        driver.get(url)
+        driver.execute_script("window.scrollBy(0, 800);")  
+        time.sleep(2)  
 
-            if description is None: 
-                driver.back()
-                continue
+        for i in range(1, num_products_per_page + 1):
+            time.sleep(2)
+            # Dynamic Link
+            product_link_xpath = f"/html/body/div[1]/div/main/div/div/div[1]/div[2]/div/div[1]/section/article[{i}]/a"
 
-            # Append the product info
-            product_info = {
-                "product_url": product_url,
-                "product_name": product_name,
-                "price": price,
-                "category": category,
-                "description": description,
-                "product_imgs": image_urls
-            }
-            all_products_info.append(product_info)
-        
-        except TimeoutException:
-            print(f"Product link for {i} not found. Skipping to the next product.")
-        
-        driver.back()
-        
-        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, product_link_xpath)))
+            try:
+                product_link = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, product_link_xpath))
+                )
+                scroll_to_element(driver, product_link)  
+                product_url = product_link.get_attribute('href')
+                product_link.click()  
+                print(f"Navigated to product {i} on page {current_page}: {product_url}")
+            
+                # Scrape product info on the product page
+                product_name, price, description, image_urls = scrape_product_info_on_page(driver, product_url)
 
-    # Dump the data to a JSON file
-    with open(output_file, 'w') as file:
-        json.dump(all_products_info, file, indent=4)
+                if description is None: 
+                    driver.back()
+                    continue
 
-    print(f"Scraping of {num_products} products completed. Data saved to '{output_file}'.")
+                # Append the product info
+                product_info = {
+                    "product_url": product_url,
+                    "product_name": product_name,
+                    "price": price,
+                    "category": category,
+                    "description": description,
+                    "product_imgs": image_urls
+                }
+                all_products_info.append(product_info)
+            
+            except TimeoutException:
+                print(f"Product link for {i} not found on page {current_page}. Skipping to the next product.")
+            
+            driver.back()
+            
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, product_link_xpath)))
+
+        # Dump the data to a JSON file for the current page
+        with open(output_file, 'w') as file:
+            json.dump(all_products_info, file, indent=4)
+
+        print(f"Scraping of {num_products_per_page} products from page {current_page} completed. Data saved to '{output_file}'.")
+
+        # Clear product info for next page
+        all_products_info = []
+
+        # Move to the next page
+        current_page += 1
 
     # Close the browser
     driver.quit()
 
-
 # Example usage:
 chromedriver_path = "/usr/local/bin/chromedriver"
 # chromedriver_path = "C:\\Program Files\\Executables\\chromedriver.exe"
-url = "https://www.asos.com/men/shirts/cat/?cid=3602"  # URL of the shirts category
-scrape_multiple_products(chromedriver_path, url, num_products=72)
+base_url = "https://www.asos.com/men/shirts/cat/?cid=3602"  # URL of the shirts category
+scrape_multiple_products(chromedriver_path, base_url, num_products_per_page=72, max_pages=5)
