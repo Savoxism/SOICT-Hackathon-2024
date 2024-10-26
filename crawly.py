@@ -10,7 +10,17 @@ import time
 
 from utils import scroll_to_element, get_image_sources_from_thumbnails
 
-def scrape_product_info_on_page(driver, product_url):
+def scrape_product_info_on_page(driver):
+    time.sleep(3)
+    try:
+        popup_close_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/div[2]/div/a"))
+        )
+        popup_close_button.click()
+    except TimeoutException:
+        # print("No pop-up found.")
+        pass
+    
     time.sleep(3) 
     driver.execute_script("window.scrollBy(0, 500);")  
     time.sleep(2)
@@ -115,7 +125,7 @@ def scrape_multiple_products(chromedriver_path, base_url, output_folder='dataset
                 print(f"Navigated to product {i} on page {current_page}: {product_url}")
             
                 # Scrape product info on the product page
-                product_name, price, description, image_urls = scrape_product_info_on_page(driver, product_url)
+                product_name, price, description, image_urls = scrape_product_info_on_page(driver)
 
                 if description is None: 
                     driver.back()
@@ -155,7 +165,7 @@ def scrape_multiple_products(chromedriver_path, base_url, output_folder='dataset
     driver.quit()
 
 # Example usage:
-chromedriver_path = "/usr/local/bin/chromedriver"
-# chromedriver_path = "C:\\Program Files\\Executables\\chromedriver.exe"
+# chromedriver_path = "/usr/local/bin/chromedriver"
+chromedriver_path = "C:\\Program Files\\Executables\\chromedriver.exe"
 base_url = "https://www.asos.com/men/shirts/cat/?cid=3602"  # URL of the shirts category
-scrape_multiple_products(chromedriver_path, base_url, start_page=5, num_products_per_page=72, max_pages=10)
+scrape_multiple_products(chromedriver_path, base_url, start_page=10, num_products_per_page=72, max_pages=15)

@@ -1,0 +1,4 @@
+Standardization such as the Z-scale Standardization is especially important because it ensures that features with different units or scales do not disproprotionately influence the model.
+
+Example: Consider a logistic regression model where one feature represents age (ranging from 18 to 70) and another represents income (ranging from $20,000 to $100,000). If the feature scales are not standardized, the algorithm will take small steps for the income feature because the gradients for income will be much larger than for age. This can lead to inefficient learning and poor model performance.
+
